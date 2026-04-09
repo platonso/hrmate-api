@@ -41,7 +41,7 @@ func (h *Handler) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, dto.ToUserResponses(users))
+	response.WriteResponse(w, http.StatusOK, dto.ToUserResponses(users))
 }
 
 func (h *Handler) HandleActivate(w http.ResponseWriter, r *http.Request) {
@@ -67,5 +67,5 @@ func (h *Handler) handleChangeActiveStatus(
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, dto.ToUserResponse(user))
+	response.WriteResponse(w, http.StatusOK, dto.ToUserResponse(user))
 }

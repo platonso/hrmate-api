@@ -39,7 +39,7 @@ func (h *Handler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteJSON(w, http.StatusCreated, dto.AuthResponse{Token: token})
+	response.WriteResponse(w, http.StatusCreated, dto.AuthResponse{Token: token})
 }
 
 func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -56,5 +56,5 @@ func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, dto.AuthResponse{Token: token})
+	response.WriteResponse(w, http.StatusOK, dto.AuthResponse{Token: token})
 }

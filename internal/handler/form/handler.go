@@ -58,7 +58,7 @@ func (h *Handler) HandleCreateForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteJSON(w, http.StatusCreated, dto.ToFormResponse(form))
+	response.WriteResponse(w, http.StatusCreated, dto.ToFormResponse(form))
 }
 
 func (h *Handler) HandleGetForm(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +86,7 @@ func (h *Handler) HandleGetForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, dto.ToFormResponse(form))
+	response.WriteResponse(w, http.StatusOK, dto.ToFormResponse(form))
 }
 
 func (h *Handler) HandleGetForms(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +114,7 @@ func (h *Handler) HandleGetForms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, forms)
+	response.WriteResponse(w, http.StatusOK, forms)
 }
 
 func (h *Handler) HandleGetFormsWithUsers(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +142,7 @@ func (h *Handler) HandleGetFormsWithUsers(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, dto.ToFormsWithUserResponses(formsWithUsers))
+	response.WriteResponse(w, http.StatusOK, dto.ToFormsWithUserResponses(formsWithUsers))
 }
 
 func (h *Handler) HandleApprove(w http.ResponseWriter, r *http.Request) {
@@ -197,5 +197,5 @@ func handleFormAction(
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, dto.ToFormResponse(form))
+	response.WriteResponse(w, http.StatusOK, dto.ToFormResponse(form))
 }

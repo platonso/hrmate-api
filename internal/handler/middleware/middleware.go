@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -102,7 +103,7 @@ func (m *Auth) RequireRoles(allowedRoles ...domain.Role) func(http.Handler) http
 				}
 			}
 
-			response.WriteError(w, errs.ErrForbidden, "forbidden")
+			response.WriteError(w, errs.ErrForbidden, fmt.Sprintf("role '%s' is not allowed to access this resource", userRole))
 		})
 	}
 }
