@@ -1,67 +1,76 @@
 package dto
 
 import (
-	"github.com/platonso/hrmate/internal/domain"
-	"github.com/platonso/hrmate/internal/service/form/model"
+	"github.com/platonso/hrmate-api/internal/domain"
+	"github.com/platonso/hrmate-api/internal/service/form/model"
 )
 
-func ToFormCreateInput(req FormCreateRequest) model.FormCreateInput {
-	return model.FormCreateInput{
-		Title:       req.Title,
-		Description: req.Description,
-		StartDate:   req.StartDate,
-		EndDate:     req.EndDate,
+func ToFormWithDocsResponse(m *model.FormWithDocs) FormWithDocsResponse {
+	if m == nil {
+		return FormWithDocsResponse{
+			Documents: []DocumentResponse{},
+		}
+	}
+	resp := FormWithDocsResponse{
+		ID:          m.Form.ID,
+		UserID:      m.Form.UserID,
+		Title:       m.Form.Title,
+		Description: m.Form.Description,
+		StartDate:   m.Form.StartDate,
+		EndDate:     m.Form.EndDate,
+		CreatedAt:   m.Form.CreatedAt,
+		Status:      string(m.Form.Status),
+		Documents:   []DocumentResponse{},
+	}
+
+	if m.Form.Status != domain.StatusPending {
+		resp.Resolution = &Resolution{
+			Comment:      m.Form.Comment,
+			ResolvedAt:   *m.Form.ReviewedAt,
+			ResponseDocs: []DocumentResponse{},
+		}
+	}
+
+	if len(m.Documents) > 0 {
+		for _, d := range m.Documents {
+			switch d.Type {
+			case domain.DocumentTypeAttachment:
+				resp.Documents = append(resp.Documents, toDocumentResponse(d))
+			case domain.DocumentTypeResult:
+				resp.Resolution.ResponseDocs = append(resp.Resolution.ResponseDocs, toDocumentResponse(d))
+			}
+		}
+	}
+	return resp
+}
+
+func toDocumentResponse(doc domain.Document) DocumentResponse {
+	return DocumentResponse{
+		ID:   doc.ID,
+		Name: doc.OriginalName,
 	}
 }
 
-func ToFormResponse(form *domain.Form) FormResponse {
+func ToFormResponse(f *domain.Form) FormResponse {
 	return FormResponse{
-		ID:          form.ID,
-		UserID:      form.UserID,
-		Title:       form.Title,
-		Description: form.Description,
-		StartDate:   form.StartDate,
-		EndDate:     form.EndDate,
-		CreatedAt:   form.CreatedAt,
-		ReviewedAt:  form.ReviewedAt,
-		Status:      string(form.Status),
-		Comment:     form.Comment,
+		ID:     f.ID,
+		UserID: f.UserID,
+		Title:  f.Title,
+		//Description: form.Description,
+		//StartDate: form.StartDate,
+		//EndDate:   form.EndDate,
+		CreatedAt: f.CreatedAt,
+		Status:    string(f.Status),
 	}
 }
 
-func ToFormResponses(forms []domain.Form) []FormResponse {
+func ToFormsResponse(forms []domain.Form) []FormResponse {
 	if len(forms) == 0 {
 		return []FormResponse{}
 	}
 	responses := make([]FormResponse, len(forms))
 	for i := range forms {
 		responses[i] = ToFormResponse(&forms[i])
-	}
-	return responses
-}
-
-func ToUserResponse(user *domain.User) UserResponse {
-	return UserResponse{
-		ID:        user.ID,
-		Role:      string(user.Role),
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Position:  user.Position,
-		Email:     user.Email,
-		IsActive:  user.IsActive,
-	}
-}
-
-func ToFormsWithUserResponses(data []model.FormsWithUser) []FormsWithUserResponse {
-	if len(data) == 0 {
-		return []FormsWithUserResponse{}
-	}
-	responses := make([]FormsWithUserResponse, len(data))
-	for i := range data {
-		responses[i] = FormsWithUserResponse{
-			User:  ToUserResponse(&data[i].User),
-			Forms: ToFormResponses(data[i].Forms),
-		}
 	}
 	return responses
 }

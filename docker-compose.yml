@@ -1,8 +1,37 @@
 services:
 
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs
+    command: server /data
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-admin}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-admin1234}
+      - RUSTFS_S3_ACCESS_KEY=${MINIO_ACCESS_KEY:-admin}
+      - RUSTFS_S3_SECRET_KEY=${MINIO_SECRET_KEY:-admin1234}
+      - RUSTFS_CONSOLE_ENABLE=true
+    volumes:
+      - hrmate-s3-data:/data
+    networks:
+      - hrmate-network
+    restart: unless-stopped
+
+  rustfs-port-forwarder:
+    image: alpine/socat:1.8.0.3
+    container_name: rustfs-port-forwarder
+    command: "tcp-listen:9001,fork,reuseaddr tcp-connect:rustfs:9001"
+    ports:
+      - "127.0.0.1:9001:9001"
+    networks:
+      - hrmate-network
+    depends_on:
+      - rustfs
+    profiles:
+      - rustfs-port-forward
+
   postgres:
     image: postgres:17
-    container_name: hrmate-db
+    container_name: pg
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -19,9 +48,9 @@ services:
     networks:
       - hrmate-network
 
-  port-forwarder:
+  pg-port-forwarder:
     image: alpine/socat:1.8.0.3
-    container_name: postgres-port-forwarder
+    container_name: pg-port-forwarder
     command: "tcp-listen:5432,fork,reuseaddr tcp-connect:postgres:5432"
     ports:
       - "127.0.0.1:5432:5432"
@@ -31,13 +60,17 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    profiles:
+      - pg-port-forward
 
   postgres-migrator:
+    image: hrmate-pg-migrator
     build:
       context: .
       dockerfile: Dockerfile
       target: migrator
-    container_name: hrmate-migrator
+    pull_policy: never
+    container_name: migrator
     environment:
       MIGRATION_DIR: ${MIGRATION_DIR}
 
@@ -52,13 +85,16 @@ services:
     networks:
       - hrmate-network
     restart: "no"
+    profiles:
+      - migrator
 
-  backend:
+  api:
+    image: hrmate-api
     build:
       context: .
       dockerfile: Dockerfile
-      target: app
-    container_name: hrmate-backend
+      target: api
+    container_name: api
     environment:
       HTTP_PORT: ${HTTP_PORT}
       JWT_SECRET: ${JWT_SECRET}
@@ -70,13 +106,17 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
+
+      MINIO_ENDPOINT: rustfs:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+      MINIO_USE_SSL: ${MINIO_USE_SSL}
     ports:
       - "${HTTP_PORT}:8080"
     depends_on:
       postgres:
         condition: service_healthy
-      postgres-migrator:
-        condition: service_completed_successfully
     restart: unless-stopped
     networks:
       - hrmate-network
@@ -89,3 +129,5 @@ networks:
 volumes:
   hrmate-data:
     name: hrmate-data
+  hrmate-s3-data:
+    name: hrmate-s3-data

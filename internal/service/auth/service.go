@@ -8,9 +8,9 @@ import (
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/platonso/hrmate/internal/domain"
-	errs "github.com/platonso/hrmate/internal/errors"
-	"github.com/platonso/hrmate/internal/service/auth/model"
+	"github.com/platonso/hrmate-api/internal/domain"
+	errs "github.com/platonso/hrmate-api/internal/errors"
+	"github.com/platonso/hrmate-api/internal/service/auth/model"
 	"golang.org/x/crypto/bcrypt"
 )
 

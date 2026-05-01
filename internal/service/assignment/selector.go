@@ -4,7 +4,7 @@ import (
 	"math/rand"
 
 	"github.com/google/uuid"
-	errs "github.com/platonso/hrmate/internal/errors"
+	errs "github.com/platonso/hrmate-api/internal/errors"
 )
 
 type HRWorkload struct {

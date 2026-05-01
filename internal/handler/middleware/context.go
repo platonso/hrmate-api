@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/platonso/hrmate/internal/domain"
+	"github.com/platonso/hrmate-api/internal/domain"
 )
 
 func GetUserRole(ctx context.Context) (domain.Role, bool) {

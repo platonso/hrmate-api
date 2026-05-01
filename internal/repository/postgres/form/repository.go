@@ -10,10 +10,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/platonso/hrmate/internal/domain"
-	errs "github.com/platonso/hrmate/internal/errors"
-	"github.com/platonso/hrmate/internal/repository/postgres/form/entity"
-	formservice "github.com/platonso/hrmate/internal/service/form"
+	"github.com/platonso/hrmate-api/internal/domain"
+	errs "github.com/platonso/hrmate-api/internal/errors"
+	"github.com/platonso/hrmate-api/internal/repository/postgres/form/entity"
+	formservice "github.com/platonso/hrmate-api/internal/service/form"
 )
 
 type Repository struct {
@@ -54,22 +54,7 @@ func (r *Repository) Create(ctx context.Context, form *domain.Form) error {
 	return err
 }
 
-func (r *Repository) FindAll(ctx context.Context) ([]domain.Form, error) {
-	query := `
-        SELECT id, user_id, executor_id, title, description, start_date, end_date, created_at, reviewed_at, status, comment
-        FROM forms
-        ORDER BY created_at DESC
-    `
-
-	records, err := r.findForms(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-
-	return entity.ToDomainForms(records), nil
-}
-
-func (r *Repository) FindByFormID(ctx context.Context, formId uuid.UUID) (*domain.Form, error) {
+func (r *Repository) FindByID(ctx context.Context, formId uuid.UUID) (*domain.Form, error) {
 	query := `
 		SELECT id, user_id, executor_id, title, description, start_date, end_date, created_at, reviewed_at, status, comment
 		FROM forms
@@ -83,24 +68,12 @@ func (r *Repository) FindByFormID(ctx context.Context, formId uuid.UUID) (*domai
 	return &form, nil
 }
 
-func (r *Repository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Form, error) {
-	query := `
-        SELECT id, user_id, executor_id, title, description, start_date, end_date, created_at, reviewed_at, status, comment
-        FROM forms 
-        WHERE user_id = $1
-        ORDER BY created_at DESC
-    `
-
-	records, err := r.findForms(ctx, query, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	return entity.ToDomainForms(records), nil
-}
-
 func (r *Repository) FindByFilter(ctx context.Context, filter *formservice.Filter) ([]domain.Form, error) {
-	query := `SELECT id, user_id, executor_id, title, description, start_date, end_date, created_at, reviewed_at, status, comment FROM forms`
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString(`
+		SELECT id, user_id, executor_id, title, description, start_date, end_date, created_at, reviewed_at, status, comment 
+		FROM forms 
+`)
 	var conditions []string
 	var args []any
 	argPos := 1
@@ -126,12 +99,22 @@ func (r *Repository) FindByFilter(ctx context.Context, filter *formservice.Filte
 	}
 
 	if len(conditions) > 0 {
-		query += " WHERE " + strings.Join(conditions, " AND ")
+		queryBuilder.WriteString(" WHERE ")
+		queryBuilder.WriteString(strings.Join(conditions, " AND "))
 	}
 
-	query += " ORDER BY created_at DESC"
+	sortOrder := "DESC"
+	if filter != nil && filter.SortOrder != "" {
+		order := strings.ToUpper(filter.SortOrder)
+		if order == "ASC" || order == "DESC" {
+			sortOrder = order
+		}
+	}
 
-	records, err := r.findForms(ctx, query, args...)
+	queryBuilder.WriteString(" ORDER BY created_at ")
+	queryBuilder.WriteString(sortOrder)
+
+	records, err := r.findForms(ctx, queryBuilder.String(), args...)
 	if err != nil {
 		return nil, fmt.Errorf("find forms by filter: %w", err)
 	}
@@ -150,7 +133,27 @@ func (r *Repository) Update(ctx context.Context, form *domain.Form) error {
 
 	tag, err := conn.Exec(ctx, query, rec.ReviewedAt, rec.Status, rec.Comment, rec.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("exec query: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return errs.ErrFormNotFound
+	}
+
+	return nil
+}
+
+func (r *Repository) Delete(ctx context.Context, formID uuid.UUID) error {
+	query := `
+		DELETE FROM forms
+		WHERE id = $1
+	`
+
+	conn := r.ctxGetter.DefaultTrOrDB(ctx, r.db)
+
+	tag, err := conn.Exec(ctx, query, formID)
+	if err != nil {
+		return fmt.Errorf("exec query: %w", err)
 	}
 
 	if tag.RowsAffected() == 0 {

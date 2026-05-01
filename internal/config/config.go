@@ -23,9 +23,18 @@ type HTTPConfig struct {
 	IdleTimeout  time.Duration `env:"HTTP_IDLE_TIMEOUT" env-default:"60s"`
 }
 
+type MinIOConfig struct {
+	Endpoint   string `env:"MINIO_ENDPOINT" env-required:"true"`
+	AccessKey  string `env:"MINIO_ACCESS_KEY" env-required:"true"`
+	SecretKey  string `env:"MINIO_SECRET_KEY" env-required:"true"`
+	BucketName string `env:"MINIO_BUCKET_NAME" env-default:"hrmate-docs"`
+	UseSSL     bool   `env:"MINIO_USE_SSL" env-default:"false"`
+}
+
 type Config struct {
 	HTTP          HTTPConfig
 	Postgres      PostgresConfig
+	MinIO         MinIOConfig
 	JWTSecret     string `env:"JWT_SECRET" env-required:"true"`
 	AdminEmail    string `env:"ADMIN_EMAIL" env-required:"true"`
 	AdminPassword string `env:"ADMIN_PASSWORD" env-required:"true"`

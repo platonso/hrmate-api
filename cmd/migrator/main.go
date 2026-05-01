@@ -10,14 +10,18 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/platonso/hrmate/internal/config"
+	"github.com/platonso/hrmate-api/internal/config"
 	"github.com/pressly/goose/v3"
 )
 
-var command = flag.String("command", "up", "goose command (up, down, status)")
+var command = flag.String("command", "", "goose command (up, down, status)")
 
 func main() {
 	flag.Parse()
+
+	if *command == "" {
+		log.Fatalf("Error: -command flag is required")
+	}
 
 	cfg, err := config.NewDB()
 	if err != nil {

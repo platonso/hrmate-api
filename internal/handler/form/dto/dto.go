@@ -6,18 +6,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type FormCreateRequest struct {
-	Title       string     `json:"title" validate:"required,min=1"`
-	Description string     `json:"description"`
-	StartDate   *time.Time `json:"startDate"`
-	EndDate     *time.Time `json:"endDate"`
-}
-
-type FormCommentRequest struct {
-	Comment string `json:"comment"`
-}
-
 type FormResponse struct {
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"userId"`
+	Title     string    `json:"title"`
+	CreatedAt time.Time `json:"createdAt"`
+	Status    string    `json:"status"`
+}
+
+type FormWithDocsResponse struct {
 	ID          uuid.UUID `json:"id"`
 	UserID      uuid.UUID `json:"userId"`
 	Title       string    `json:"title"`
@@ -26,23 +23,19 @@ type FormResponse struct {
 	StartDate *time.Time `json:"startDate"`
 	EndDate   *time.Time `json:"endDate"`
 
-	CreatedAt  time.Time  `json:"createdAt"`
-	ReviewedAt *time.Time `json:"reviewedAt"`
-	Status     string     `json:"status"`
-	Comment    *string    `json:"comment"`
+	CreatedAt  time.Time          `json:"createdAt"`
+	Status     string             `json:"status"`
+	Documents  []DocumentResponse `json:"attachDocs"`
+	Resolution *Resolution        `json:"resolution,omitempty"`
 }
 
-type UserResponse struct {
-	ID        uuid.UUID `json:"id"`
-	Role      string    `json:"role"`
-	FirstName string    `json:"firstName"`
-	LastName  string    `json:"lastName"`
-	Position  string    `json:"position"`
-	Email     string    `json:"email"`
-	IsActive  bool      `json:"isActive"`
+type DocumentResponse struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
 }
 
-type FormsWithUserResponse struct {
-	User  UserResponse   `json:"user"`
-	Forms []FormResponse `json:"forms"`
+type Resolution struct {
+	Comment      *string            `json:"comment"`
+	ResolvedAt   time.Time          `json:"resolvedAt"`
+	ResponseDocs []DocumentResponse `json:"responseDocs"`
 }

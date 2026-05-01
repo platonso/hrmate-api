@@ -2,14 +2,17 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
-	"github.com/platonso/hrmate/internal/domain"
-	"github.com/platonso/hrmate/internal/handler/auth"
-	"github.com/platonso/hrmate/internal/handler/form"
-	"github.com/platonso/hrmate/internal/handler/middleware"
-	"github.com/platonso/hrmate/internal/handler/user"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	_ "github.com/platonso/hrmate-api/docs"
+	"github.com/platonso/hrmate-api/internal/config"
+	"github.com/platonso/hrmate-api/internal/domain"
+	"github.com/platonso/hrmate-api/internal/handler/auth"
+	"github.com/platonso/hrmate-api/internal/handler/form"
+	"github.com/platonso/hrmate-api/internal/handler/middleware"
+	"github.com/platonso/hrmate-api/internal/handler/user"
 )
 
 type AuthProvider interface {
@@ -27,9 +30,10 @@ type Router struct {
 	handlerUser *user.Handler
 	handlerForm *form.Handler
 	middleware  *middleware.Auth
+	cfg         *config.Config
 }
 
-func NewRouter(authSvc AuthProvider, userSvc UserProvider, formSvc form.Service,
+func NewRouter(cfg *config.Config, authSvc AuthProvider, userSvc UserProvider, formSvc form.Service,
 ) *Router {
 	authMiddleware := &middleware.Auth{
 		AuthSvc: authSvc,
@@ -41,67 +45,78 @@ func NewRouter(authSvc AuthProvider, userSvc UserProvider, formSvc form.Service,
 		handlerUser: user.NewHandler(userSvc),
 		handlerForm: form.NewHandler(formSvc),
 		middleware:  authMiddleware,
+		cfg:         cfg,
 	}
 }
 
 func (rt *Router) Routes() http.Handler {
 	r := chi.NewRouter()
 
-	// CORS middleware ==================================================================
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"}, // Allow all origins for testing
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300,
-	}))
-	// ===================================================================================
+	r.Use(chimiddleware.Timeout(14 * time.Second))
 
 	// Authentication
 	r.Post("/register", rt.handlerAuth.HandleRegister)
 	r.Post("/login", rt.handlerAuth.HandleLogin)
 
+	r.Group(func(r chi.Router) {
+		r.Use(rt.middleware.AuthMiddleware)
+		r.Use(rt.middleware.RequireActiveStatus)
+
+		r.Get("/me", rt.handlerUser.HandleGetMe)
+	})
+
 	// Employee
-	r.Route("/forms", func(r chi.Router) {
-		r.With(
-			rt.middleware.AuthMiddleware,
-			rt.middleware.RequireRoles(domain.RoleEmployee),
-			rt.middleware.RequireActiveStatus,
-		).Group(func(r chi.Router) {
-			r.Post("/", rt.handlerForm.HandleCreateForm)
-			r.Get("/", rt.handlerForm.HandleGetForms)
-			r.Get("/{id}", rt.handlerForm.HandleGetForm)
-		})
+	r.Group(func(r chi.Router) {
+		r.Use(rt.middleware.AuthMiddleware)
+		r.Use(rt.middleware.RequireRoles(domain.RoleEmployee))
+		r.Use(rt.middleware.RequireActiveStatus)
+
+		r.Post("/forms", rt.handlerForm.HandleCreateForm)
+		r.Get("/forms", rt.handlerForm.HandleGetForms)
+		r.Get("/forms/{id}", rt.handlerForm.HandleGetForm)
 	})
 
 	// HR
 	r.Route("/hr", func(r chi.Router) {
-		r.With(
-			rt.middleware.AuthMiddleware,
-			rt.middleware.RequireRoles(domain.RoleHR),
-			rt.middleware.RequireActiveStatus,
-		).Group(func(r chi.Router) {
-			r.Get("/users", rt.handlerUser.HandleGetUsers)
+		r.Use(rt.middleware.AuthMiddleware)
+		r.Use(rt.middleware.RequireRoles(domain.RoleHR))
+		r.Use(rt.middleware.RequireActiveStatus)
 
-			r.Get("/forms", rt.handlerForm.HandleGetFormsWithUsers)
-			r.Get("/forms/{id}", rt.handlerForm.HandleGetForm)
-			r.Patch("/forms/{id}/approve", rt.handlerForm.HandleApprove)
-			r.Patch("/forms/{id}/reject", rt.handlerForm.HandleReject)
-		})
+		r.Get("/user/{id}", rt.handlerUser.HandleGetUser)
+		r.Get("/users", rt.handlerUser.HandleGetUsers)
+
+		r.Get("/forms", rt.handlerForm.HandleGetForms)
+
+		r.Get("/forms/{id}", rt.handlerForm.HandleGetForm)
+		r.Patch("/forms/{id}/approve", rt.handlerForm.HandleApprove)
+		r.Patch("/forms/{id}/reject", rt.handlerForm.HandleReject)
 	})
 
-	// Administration
+	// Admin
 	r.Route("/admin", func(r chi.Router) {
-		r.With(
-			rt.middleware.AuthMiddleware,
-			rt.middleware.RequireRoles(domain.RoleAdmin),
-			rt.middleware.RequireActiveStatus,
-		).Group(func(r chi.Router) {
-			r.Get("/users", rt.handlerUser.HandleGetUsers)
-			r.Patch("/users/{id}/activate", rt.handlerUser.HandleActivate)
-			r.Patch("/users/{id}/deactivate", rt.handlerUser.HandleDeactivate)
-		})
+		r.Use(rt.middleware.AuthMiddleware)
+		r.Use(rt.middleware.RequireRoles(domain.RoleAdmin))
+		r.Use(rt.middleware.RequireActiveStatus)
+
+		r.Get("/user/{id}", rt.handlerUser.HandleGetUser)
+		r.Get("/users", rt.handlerUser.HandleGetUsers)
+		r.Patch("/users/{id}/activate", rt.handlerUser.HandleActivate)
+		r.Patch("/users/{id}/deactivate", rt.handlerUser.HandleDeactivate)
+
+		r.Get("/forms", rt.handlerForm.HandleGetForms)
+
+		r.Get("/forms/{id}", rt.handlerForm.HandleGetForm)
+		//r.Patch("/forms/{id}/approve", rt.handlerForm.HandleApprove)
+		//r.Patch("/forms/{id}/reject", rt.handlerForm.HandleReject)
+		r.Delete("/forms/{id}", rt.handlerForm.HandleDelete)
+	})
+
+	// Documents
+	r.Route("/documents", func(r chi.Router) {
+		r.Use(rt.middleware.AuthMiddleware)
+		r.Use(rt.middleware.RequireActiveStatus)
+
+		r.Get("/{id}/download", rt.handlerForm.HandleDownloadDocument)
 	})
 
 	return r

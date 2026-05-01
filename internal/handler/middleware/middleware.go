@@ -10,9 +10,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/platonso/hrmate/internal/domain"
-	errs "github.com/platonso/hrmate/internal/errors"
-	"github.com/platonso/hrmate/internal/handler/response"
+	"github.com/platonso/hrmate-api/internal/domain"
+	errs "github.com/platonso/hrmate-api/internal/errors"
+	"github.com/platonso/hrmate-api/internal/handler/response"
 )
 
 const (
@@ -83,6 +83,10 @@ func (m *Auth) AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), userIDKey, userID)
 		ctx = context.WithValue(ctx, userRoleKey, userRole)
 
+		if next == nil {
+			response.WriteError(w, errs.ErrInternalServer, "endpoint not implemented")
+			return
+		}
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -98,6 +102,10 @@ func (m *Auth) RequireRoles(allowedRoles ...domain.Role) func(http.Handler) http
 
 			for _, role := range allowedRoles {
 				if userRole == role {
+					if next == nil {
+						response.WriteError(w, errs.ErrInternalServer, "endpoint not implemented")
+						return
+					}
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -130,6 +138,11 @@ func (m *Auth) RequireActiveStatus(next http.Handler) http.Handler {
 
 		if !isActive {
 			response.WriteError(w, errs.ErrForbidden, "account is not active")
+			return
+		}
+
+		if next == nil {
+			response.WriteError(w, errs.ErrInternalServer, "endpoint not implemented")
 			return
 		}
 

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	errs "github.com/platonso/hrmate/internal/errors"
+	errs "github.com/platonso/hrmate-api/internal/errors"
 )
 
 type FormStatus string
@@ -48,7 +48,7 @@ func NewForm(userID, executorID uuid.UUID, title, description string, startDate,
 
 func (f *Form) ApproveForm(comment string) (bool, error) {
 	if f.Status == StatusApproved {
-		return false, nil
+		return false, errs.ErrFormAlreadyApproved
 	}
 
 	if f.Status == StatusRejected {
@@ -62,14 +62,16 @@ func (f *Form) ApproveForm(comment string) (bool, error) {
 	approveTime := time.Now()
 	f.ReviewedAt = &approveTime
 	f.Status = StatusApproved
-	f.Comment = &comment
+	if comment != "" {
+		f.Comment = &comment
+	}
 
 	return true, nil
 }
 
 func (f *Form) RejectForm(comment string) (bool, error) {
 	if f.Status == StatusRejected {
-		return false, nil
+		return false, errs.ErrFormAlreadyRejected
 	}
 
 	if f.Status == StatusApproved {
@@ -83,7 +85,9 @@ func (f *Form) RejectForm(comment string) (bool, error) {
 	rejectTime := time.Now()
 	f.ReviewedAt = &rejectTime
 	f.Status = StatusRejected
-	f.Comment = &comment
+	if comment != "" {
+		f.Comment = &comment
+	}
 
 	return true, nil
 }

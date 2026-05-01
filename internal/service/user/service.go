@@ -6,14 +6,14 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/platonso/hrmate/internal/domain"
-	errs "github.com/platonso/hrmate/internal/errors"
+	"github.com/platonso/hrmate-api/internal/domain"
+	errs "github.com/platonso/hrmate-api/internal/errors"
 )
 
 type Repository interface {
 	Update(ctx context.Context, user *domain.User) error
 	FindByRole(ctx context.Context, roles ...domain.Role) ([]domain.User, error)
-	FindByUserID(ctx context.Context, userId uuid.UUID) (*domain.User, error)
+	FindByID(ctx context.Context, userId uuid.UUID) (*domain.User, error)
 	IsActive(ctx context.Context, userID uuid.UUID) (bool, error)
 }
 type Service struct {
@@ -24,8 +24,23 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
-	user, err := s.repo.FindByUserID(ctx, userID)
+func (s *Service) GetUserByID(ctx context.Context, userID uuid.UUID, requesterRole domain.Role, requesterID uuid.UUID) (*domain.User, error) {
+
+	var hasAccess bool
+	switch requesterRole {
+	case domain.RoleAdmin:
+		hasAccess = true
+	case domain.RoleHR:
+		hasAccess = true
+	case domain.RoleEmployee:
+		hasAccess = userID == requesterID
+	}
+
+	if !hasAccess {
+		return nil, errs.ErrUserNotFound
+	}
+
+	user, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFound) {
 			return nil, errs.ErrUserNotFound
@@ -38,7 +53,7 @@ func (s *Service) GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.Us
 }
 
 func (s *Service) ChangeActiveStatus(ctx context.Context, userID uuid.UUID, isActive bool) (*domain.User, error) {
-	user, err := s.repo.FindByUserID(ctx, userID)
+	user, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotFound) {
 			return nil, errs.ErrUserNotFound

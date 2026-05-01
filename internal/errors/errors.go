@@ -24,4 +24,7 @@ var (
 	ErrUserNotFound      = errors.New("USER_NOT_FOUND")
 	ErrUserNotActive     = errors.New("USER_NOT_ACTIVE")
 	ErrUserAlreadyExists = errors.New("USER_ALREADY_EXISTS")
+
+	// Document errors
+	ErrDocumentNotFound = errors.New("DOCUMENT_NOT_FOUND")
 )

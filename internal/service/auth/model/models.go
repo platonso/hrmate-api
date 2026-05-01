@@ -1,6 +1,6 @@
 package model
 
-import "github.com/platonso/hrmate/internal/domain"
+import "github.com/platonso/hrmate-api/internal/domain"
 
 type RegisterInput struct {
 	FirstName string

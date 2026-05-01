@@ -6,16 +6,14 @@ import (
 	"log"
 	"net/http"
 
-	errs "github.com/platonso/hrmate/internal/errors"
+	errs "github.com/platonso/hrmate-api/internal/errors"
 )
 
-type errorDetail struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
-
-type errorResponse struct {
-	Error errorDetail `json:"error"`
+type ErrorResponse struct {
+	Error struct {
+		Code    string `json:"code" validate:"required" enums:"FORBIDDEN,UNAUTHORIZED,INVALID_CREDENTIALS,INVALID_REQUEST,INTERNAL_ERROR,FORM_NOT_FOUND,FORM_ALREADY_REJECTED,FORM_ALREADY_APPROVED,NO_AVAILABLE_EXECUTORS,USER_NOT_FOUND,USER_NOT_ACTIVE,USER_ALREADY_EXISTS,DOCUMENT_NOT_FOUND" example:"ERROR_CODE"`
+		Message string `json:"message" validate:"required"`
+	} `json:"error" validate:"required"`
 }
 
 func WriteError(w http.ResponseWriter, err error, msg string) {
@@ -42,7 +40,8 @@ func WriteError(w http.ResponseWriter, err error, msg string) {
 		statusCode = http.StatusConflict
 
 	case errors.Is(err, errs.ErrUserNotFound),
-		errors.Is(err, errs.ErrFormNotFound):
+		errors.Is(err, errs.ErrFormNotFound),
+		errors.Is(err, errs.ErrDocumentNotFound):
 		statusCode = http.StatusNotFound
 
 	case errors.Is(err, errs.ErrInvalidRequest):
@@ -55,12 +54,9 @@ func WriteError(w http.ResponseWriter, err error, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
-	errResponse := errorResponse{
-		Error: errorDetail{
-			Code:    err.Error(),
-			Message: msg,
-		},
-	}
+	var errResponse ErrorResponse
+	errResponse.Error.Code = err.Error()
+	errResponse.Error.Message = msg
 
 	if err := json.NewEncoder(w).Encode(errResponse); err != nil {
 		log.Printf("Failed to encode error response: %v", err)

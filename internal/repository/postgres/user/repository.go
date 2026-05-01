@@ -3,16 +3,17 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/platonso/hrmate/internal/domain"
-	errs "github.com/platonso/hrmate/internal/errors"
-	"github.com/platonso/hrmate/internal/repository/postgres/user/entity"
-	"github.com/platonso/hrmate/internal/service/assignment"
+	"github.com/platonso/hrmate-api/internal/domain"
+	errs "github.com/platonso/hrmate-api/internal/errors"
+	"github.com/platonso/hrmate-api/internal/repository/postgres/user/entity"
+	"github.com/platonso/hrmate-api/internal/service/assignment"
 )
 
 type Repository struct {
@@ -25,6 +26,27 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 		db:        db,
 		ctxGetter: trmpgx.DefaultCtxGetter,
 	}
+}
+
+func (r *Repository) CheckSchema(ctx context.Context) error {
+	var exists bool
+	query := `
+        SELECT EXISTS (
+        	SELECT FROM information_schema.tables 
+        	WHERE table_name = 'users'
+        )
+    `
+	conn := r.ctxGetter.DefaultTrOrDB(ctx, r.db)
+
+	if err := conn.QueryRow(ctx, query).Scan(&exists); err != nil {
+		return fmt.Errorf("failed to check schema: %w", err)
+	}
+
+	if !exists {
+		return fmt.Errorf("required table 'users' does not exist")
+	}
+
+	return nil
 }
 
 func (r *Repository) Create(ctx context.Context, user *domain.User) error {
@@ -50,7 +72,7 @@ func (r *Repository) Create(ctx context.Context, user *domain.User) error {
 	return err
 }
 
-func (r *Repository) FindByUserID(ctx context.Context, userId uuid.UUID) (*domain.User, error) {
+func (r *Repository) FindByID(ctx context.Context, userId uuid.UUID) (*domain.User, error) {
 	query := `
 		SELECT id, user_role, first_name, last_name, position, email, hashed_password, is_active
 		FROM users
@@ -64,7 +86,7 @@ func (r *Repository) FindByUserID(ctx context.Context, userId uuid.UUID) (*domai
 	return &user, nil
 }
 
-func (r *Repository) FindByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]domain.User, error) {
+func (r *Repository) FindByIDs(ctx context.Context, userIDs []uuid.UUID) ([]domain.User, error) {
 	if len(userIDs) == 0 {
 		return []domain.User{}, nil
 	}
@@ -236,7 +258,7 @@ func (r *Repository) FindActiveHRsWithWorkload(ctx context.Context) ([]assignmen
 			`
 
 	conn := r.ctxGetter.DefaultTrOrDB(ctx, r.db)
-	
+
 	rows, err := conn.Query(ctx, query)
 	if err != nil {
 		log.Printf("failed to query active HRs with workload: %v", err)

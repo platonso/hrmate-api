@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/platonso/hrmate/internal/domain"
+import "github.com/platonso/hrmate-api/internal/domain"
 
 func ToUserResponse(user *domain.User) UserResponse {
 	return UserResponse{

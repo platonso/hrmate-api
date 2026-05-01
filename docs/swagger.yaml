@@ -1,0 +1,994 @@
+definitions:
+  AuthResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  DocumentResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  ErrorResponse:
+    properties:
+      error:
+        properties:
+          code:
+            enum:
+            - FORBIDDEN
+            - UNAUTHORIZED
+            - INVALID_CREDENTIALS
+            - INVALID_REQUEST
+            - INTERNAL_ERROR
+            - FORM_NOT_FOUND
+            - FORM_ALREADY_REJECTED
+            - FORM_ALREADY_APPROVED
+            - NO_AVAILABLE_EXECUTORS
+            - USER_NOT_FOUND
+            - USER_NOT_ACTIVE
+            - USER_ALREADY_EXISTS
+            - DOCUMENT_NOT_FOUND
+            example: ERROR_CODE
+            type: string
+          message:
+            type: string
+        required:
+        - code
+        - message
+        type: object
+    required:
+    - error
+    type: object
+  FormResponse:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      userId:
+        type: string
+    type: object
+  FormWithDocsResponse:
+    properties:
+      attachDocs:
+        items:
+          $ref: '#/definitions/DocumentResponse'
+        type: array
+      createdAt:
+        type: string
+      description:
+        type: string
+      endDate:
+        type: string
+      id:
+        type: string
+      resolution:
+        $ref: '#/definitions/Resolution'
+      startDate:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      userId:
+        type: string
+    type: object
+  LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  RegisterRequest:
+    properties:
+      email:
+        type: string
+      firstName:
+        minLength: 2
+        type: string
+      lastName:
+        minLength: 2
+        type: string
+      password:
+        minLength: 4
+        type: string
+      position:
+        minLength: 2
+        type: string
+      role:
+        enum:
+        - employee
+        - hr
+        type: string
+    required:
+    - email
+    - firstName
+    - lastName
+    - password
+    - position
+    - role
+    type: object
+  Resolution:
+    properties:
+      comment:
+        type: string
+      resolvedAt:
+        type: string
+      responseDocs:
+        items:
+          $ref: '#/definitions/DocumentResponse'
+        type: array
+    type: object
+  UserResponse:
+    properties:
+      email:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      lastName:
+        type: string
+      position:
+        type: string
+      role:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: RESTful API для приложения HRMate. Управление пользователями, авторизацией
+    и формами.
+  title: HRMate API
+  version: "1.0"
+paths:
+  /admin/forms:
+    get:
+      consumes:
+      - application/json
+      description: Get forms with optional filters
+      parameters:
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: string
+      - description: Filter by status
+        enum:
+        - pending
+        - approved
+        - rejected
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/FormResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get forms
+      tags:
+      - Forms
+  /admin/forms/{id}:
+    delete:
+      description: Permanently deletes a form and all its associated documents
+      parameters:
+      - description: Form ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Form and all associated documents successfully deleted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete form
+      tags:
+      - Forms
+    get:
+      consumes:
+      - application/json
+      description: Get a specific form and its documents
+      parameters:
+      - description: Form ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FormWithDocsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a full form
+      tags:
+      - Forms
+  /admin/user:
+    get:
+      consumes:
+      - application/json
+      description: Get user based on the requester's role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/UserResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user
+      tags:
+      - Users
+  /admin/users:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Get users based on the requester's role.
+        **Admin**: Returns all users with roles 'employee' and 'hr'
+        **HR**: Returns only users with role 'employee'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/UserResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get users
+      tags:
+      - Users
+  /admin/users/{id}/activate:
+    patch:
+      consumes:
+      - application/json
+      description: Change a user's active status to true
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Activate user
+      tags:
+      - Users
+  /admin/users/{id}/deactivate:
+    patch:
+      consumes:
+      - application/json
+      description: Change a user's active status to false
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate user
+      tags:
+      - Users
+  /documents/{id}/download:
+    get:
+      consumes:
+      - application/json
+      description: Download a document attached to a form
+      parameters:
+      - description: Document ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Download document
+      tags:
+      - Documents
+  /forms:
+    get:
+      consumes:
+      - application/json
+      description: Get forms with optional filters
+      parameters:
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: string
+      - description: Filter by status
+        enum:
+        - pending
+        - approved
+        - rejected
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/FormResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get forms
+      tags:
+      - Forms
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a new form with optional documents
+      parameters:
+      - description: Form Title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Form Description
+        in: formData
+        name: description
+        type: string
+      - description: Start Date in RFC3339 format
+        in: formData
+        name: startDate
+        type: string
+      - description: End Date in RFC3339 format
+        in: formData
+        name: endDate
+        type: string
+      - description: Documents to attach
+        in: formData
+        name: documents
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/FormWithDocsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create form
+      tags:
+      - Forms
+  /forms/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a specific form and its documents
+      parameters:
+      - description: Form ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FormWithDocsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a full form
+      tags:
+      - Forms
+  /hr/forms:
+    get:
+      consumes:
+      - application/json
+      description: Get forms with optional filters
+      parameters:
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: string
+      - description: Filter by status
+        enum:
+        - pending
+        - approved
+        - rejected
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/FormResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get forms
+      tags:
+      - Forms
+  /hr/forms/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a specific form and its documents
+      parameters:
+      - description: Form ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FormWithDocsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a full form
+      tags:
+      - Forms
+  /hr/forms/{id}/approve:
+    patch:
+      consumes:
+      - multipart/form-data
+      description: Approve a form with an optional comment and documents
+      parameters:
+      - description: Form ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Approval comment
+        in: formData
+        name: comment
+        type: string
+      - description: Documents to attach
+        in: formData
+        name: documents
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FormResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve form
+      tags:
+      - Forms
+  /hr/forms/{id}/reject:
+    patch:
+      consumes:
+      - multipart/form-data
+      description: Reject a form with an optional comment and documents
+      parameters:
+      - description: Form ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rejection comment
+        in: formData
+        name: comment
+        type: string
+      - description: Documents to attach
+        in: formData
+        name: documents
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FormResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject form
+      tags:
+      - Forms
+  /hr/user/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get user based on the requester's role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/UserResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user
+      tags:
+      - Users
+  /hr/users:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Get users based on the requester's role.
+        **Admin**: Returns all users with roles 'employee' and 'hr'
+        **HR**: Returns only users with role 'employee'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/UserResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get users
+      tags:
+      - Users
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return an auth token
+      parameters:
+      - description: User credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: User login
+      tags:
+      - Auth
+  /me:
+    get:
+      consumes:
+      - application/json
+      description: Returns the profile information of the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - Users
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user and return an auth token
+      parameters:
+      - description: User registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

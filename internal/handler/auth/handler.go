@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	errs "github.com/platonso/hrmate/internal/errors"
-	"github.com/platonso/hrmate/internal/handler/auth/dto"
-	"github.com/platonso/hrmate/internal/handler/request"
-	"github.com/platonso/hrmate/internal/handler/response"
-	"github.com/platonso/hrmate/internal/service/auth/model"
+	errs "github.com/platonso/hrmate-api/internal/errors"
+	"github.com/platonso/hrmate-api/internal/handler/auth/dto"
+	"github.com/platonso/hrmate-api/internal/handler/request"
+	"github.com/platonso/hrmate-api/internal/handler/response"
+	"github.com/platonso/hrmate-api/internal/service/auth/model"
 )
 
 type Service interface {
@@ -26,6 +26,17 @@ func NewHandler(svc Service) *Handler {
 	}
 }
 
+// @Summary Register a new user
+// @Description Register a new user and return an auth token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.RegisterRequest true "User registration details"
+// @Success 201 {object} dto.AuthResponse
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 409 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /register [post]
 func (h *Handler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterRequest
 	if err := request.DecodeAndValidate(r, &req); err != nil {
@@ -39,9 +50,21 @@ func (h *Handler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteResponse(w, http.StatusCreated, dto.AuthResponse{Token: token})
+	response.WriteJSON(w, http.StatusCreated, dto.AuthResponse{Token: token})
 }
 
+// @Summary User login
+// @Description Authenticate a user and return an auth token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.LoginRequest true "User credentials"
+// @Success 200 {object} dto.AuthResponse
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 403 {object} response.ErrorResponse
+// @Failure 500 {object} response.ErrorResponse
+// @Router /login [post]
 func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
 
@@ -56,5 +79,5 @@ func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteResponse(w, http.StatusOK, dto.AuthResponse{Token: token})
+	response.WriteJSON(w, http.StatusOK, dto.AuthResponse{Token: token})
 }

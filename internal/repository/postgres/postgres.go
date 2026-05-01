@@ -8,28 +8,31 @@ import (
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/platonso/hrmate/internal/repository/postgres/form"
-	"github.com/platonso/hrmate/internal/repository/postgres/user"
+	"github.com/platonso/hrmate-api/internal/repository/postgres/document"
+	"github.com/platonso/hrmate-api/internal/repository/postgres/form"
+	"github.com/platonso/hrmate-api/internal/repository/postgres/user"
 )
 
 type Repository struct {
-	Users *user.Repository
-	Forms *form.Repository
-	pool  *pgxpool.Pool
+	Users     *user.Repository
+	Forms     *form.Repository
+	Documents *document.Repository
+	pool      *pgxpool.Pool
 }
 
 func NewRepository(ctx context.Context, connStr string) (*Repository, *manager.Manager, error) {
-	db, err := newPool(ctx, connStr)
+	pool, err := newPool(ctx, connStr)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	txMgr := manager.Must(trmpgx.NewDefaultFactory(db))
+	txMgr := manager.Must(trmpgx.NewDefaultFactory(pool))
 
 	repo := &Repository{
-		Users: user.NewRepository(db),
-		Forms: form.NewRepository(db),
-		pool:  db,
+		Users:     user.NewRepository(pool),
+		Forms:     form.NewRepository(pool),
+		Documents: document.NewRepository(pool),
+		pool:      pool,
 	}
 
 	return repo, txMgr, nil

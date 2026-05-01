@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-RUN go build -o server ./cmd/app/
+RUN go build -o server ./cmd/api/
 
 FROM golang:1.25.1-alpine AS builder-migrator
 
@@ -18,7 +18,7 @@ COPY . .
 
 RUN go build -o migrator ./cmd/migrator/
 
-FROM alpine:latest AS app
+FROM alpine:latest AS api
 
 WORKDIR /app
 COPY --from=builder-server /build/server .

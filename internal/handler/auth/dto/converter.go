@@ -1,8 +1,8 @@
 package dto
 
 import (
-	"github.com/platonso/hrmate/internal/domain"
-	"github.com/platonso/hrmate/internal/service/auth/model"
+	"github.com/platonso/hrmate-api/internal/domain"
+	"github.com/platonso/hrmate-api/internal/service/auth/model"
 )
 
 func ToRegisterInput(req *RegisterRequest) *model.RegisterInput {
