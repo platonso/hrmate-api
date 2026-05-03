@@ -15,10 +15,11 @@ import (
 	"github.com/platonso/hrmate-api/internal/handler/response"
 )
 
-const (
-	userIDKey   = "userID"
-	userRoleKey = "userRole"
-)
+type userIDKeyType struct{}
+type userRoleKeyType struct{}
+
+var userIDKey = userIDKeyType{}
+var userRoleKey = userRoleKeyType{}
 
 type AuthService interface {
 	GetJWTSecret() string

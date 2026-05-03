@@ -94,7 +94,6 @@ func (r *Repository) FindByFilter(ctx context.Context, filter *formservice.Filte
 		if filter.FormStatus != nil {
 			conditions = append(conditions, fmt.Sprintf("status = $%d", argPos))
 			args = append(args, string(*filter.FormStatus))
-			argPos++
 		}
 	}
 

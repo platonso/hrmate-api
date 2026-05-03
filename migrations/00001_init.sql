@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS documents (
                                         form_id UUID NOT NULL,
                                         object_key TEXT NOT NULL UNIQUE,
                                         original_name TEXT NOT NULL,
-                                        uploaded_at TIMESTAMP NOT NULL,
+                                        uploaded_at TIMESTAMPTZ NOT NULL,
                                         type TEXT NOT NULL,
                                         CONSTRAINT fk_documents_form FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE
 );

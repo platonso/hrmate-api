@@ -1,4 +1,4 @@
-FROM golang:1.25.1-alpine AS builder-server
+FROM golang:1.26.2-alpine3.23 AS builder-server
 
 WORKDIR /build
 
@@ -8,7 +8,7 @@ COPY . .
 
 RUN go build -o server ./cmd/api/
 
-FROM golang:1.25.1-alpine AS builder-migrator
+FROM golang:1.26.2-alpine3.23 AS builder-migrator
 
 WORKDIR /build
 

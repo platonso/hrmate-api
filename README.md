@@ -1,7 +1,7 @@
 # HRMate API
 
 <div>
-    <img src="https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go&logoColor=white" alt="Go Version">
+    <img src="https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white" alt="Go Version">
     <img src="https://img.shields.io/badge/PostgreSQL-17+-336791?logo=postgresql&logoColor=white" alt="PostgreSQL">
     <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker">
     <img src="https://img.shields.io/badge/Swagger-API_Docs-85EA2D?logo=swagger&logoColor=white" alt="Swagger">
@@ -63,7 +63,7 @@
 
 | Компонент            | Технология              |
 |----------------------|-------------------------|
-| **Язык**             | Go 1.25+                |
+| **Язык**             | Go 1.26+                |
 | **Web Framework**    | Chi Router              |
 | **Database**         | PostgreSQL 17+          |
 | **ORM/Драйвер**      | pgx/v5                  |

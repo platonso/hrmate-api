@@ -14,7 +14,7 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-var command = flag.String("command", "", "goose command (up, down, status)")
+var command = flag.String("command", "up", "goose command (up, down, status)")
 
 func main() {
 	flag.Parse()
